@@ -16,6 +16,10 @@ st.set_page_config(
 
 # Title and description
 st.title("🤖 Maze Solving Robot")
+st.markdown("""
+This application demonstrates different search algorithms to solve a maze problem. 
+The robot needs to navigate from point A to point B.
+""")
 
 # Define the maze graph
 @st.cache_data
@@ -153,7 +157,7 @@ def a_star(graph, start, goal, h):
     
     return None, explored_path
 
-# Visualization function
+# Visualization function - COMPACT VERSION
 def visualize_maze(graph, node_pos, explored_nodes=None, explored_step=None, solution_path=None, solution_step=None):
     G = nx.DiGraph()
     
@@ -162,27 +166,26 @@ def visualize_maze(graph, node_pos, explored_nodes=None, explored_step=None, sol
         for neighbor in neighbors:
             G.add_edge(node, neighbor)
     
-    # Create figure
-    fig, ax = plt.subplots(figsize=(10, 7))
+    # Create figure - REDUCED SIZE
+    fig, ax = plt.subplots(figsize=(5, 3))
     
     # Draw the graph
     nx.draw_networkx_edges(G, node_pos, alpha=0.3, width=1, edge_color='gray')
     
-    # Draw all nodes
     node_colors = ['whitesmoke'] * len(G.nodes())
-    node_size = [700] * len(G.nodes())
     node_border_colors = ['black'] * len(G.nodes())
-    node_border_width = [1] * len(G.nodes())
+    node_size = [300] * len(G.nodes())  # SMALLER NODE SIZE
+    node_border_width = [0.8] * len(G.nodes())  
     
     # Adjust node appearance for special nodes
     for i, node in enumerate(G.nodes()):
         if node == 'A':
             node_colors[i] = 'limegreen'
-            node_size[i] = 900
+            node_size[i] = 500  # SMALLER START NODE
             node_border_width[i] = 2
         elif node == 'B':
             node_colors[i] = 'tomato'
-            node_size[i] = 900
+            node_size[i] = 500  # SMALLER GOAL NODE
             node_border_width[i] = 2
     
     # Show explored nodes up to the current step
@@ -227,63 +230,78 @@ def visualize_maze(graph, node_pos, explored_nodes=None, explored_step=None, sol
                                node_size=[node_size[i]], edgecolors=[node_border_colors[i]], 
                                linewidths=[node_border_width[i]])
     
-    # Draw labels
-    nx.draw_networkx_labels(G, node_pos, font_size=12, font_weight='bold')
+    # Draw labels - SMALLER FONT
+    nx.draw_networkx_labels(G, node_pos, font_size=8, font_weight='bold')
     
-    # Add legend
+    # Add legend - SMALLER AND MOVED TO BOTTOM
     legend_elements = [
         mpatches.Patch(color='limegreen', label='Start (A)'),
         mpatches.Patch(color='tomato', label='Goal (B)'),
-        mpatches.Patch(color='lightyellow', label='Explored Nodes'),
-        mpatches.Patch(color='lightblue', label='Solution Path')
+        mpatches.Patch(color='lightyellow', label='Explored'),
+        mpatches.Patch(color='lightblue', label='Solution')
     ]
-    ax.legend(handles=legend_elements, loc='upper right')
+    ax.legend(handles=legend_elements, loc='lower right', fontsize='small')
     
-    # Set title
-    plt.title("Maze Solving Robot Visualization", fontsize=16)
+    # Set title - SMALLER FONT
+    plt.title("Maze Solving Robot", fontsize=12)
     plt.axis('off')
+    plt.tight_layout()
     
     return fig
 
-# Main app layout
-st.markdown("""
-This application demonstrates different search algorithms to solve a maze problem. 
-The robot needs to navigate from point A to point B. You can compare how different algorithms explore the maze.
-""")
-
-# Create two columns for controls
-col1, col2 = st.columns([1, 1])
+# Main app layout - IMPROVED UI LAYOUT
+# Create two columns for controls in a single row - simplified layout
+col1, col2 = st.columns([1, 3])
 
 with col1:
     algorithm = st.selectbox(
-        "Select Algorithm:",
+        "Algorithm:",
         ["Breadth-First Search (BFS)", "Depth-First Search (DFS)", "A* Search"]
     )
 
 with col2:
-    # Display heuristic values in an expandable section
-    with st.expander("Heuristic Values (h)"):
-        # Create columns for heuristic display
-        h_col1, h_col2, h_col3 = st.columns(3)
-        
-        # Split the heuristic into 3 columns
-        items = list(heuristic.items())
-        third = len(items) // 3
-        
-        with h_col1:
-            for node, h_value in items[:third]:
-                st.write(f"{node}: {h_value}")
-        
-        with h_col2:
-            for node, h_value in items[third:2*third]:
-                st.write(f"{node}: {h_value}")
-        
-        with h_col3:
-            for node, h_value in items[2*third:]:
-                st.write(f"{node}: {h_value}")
+    # Replace heuristic values with a bigger Solve Maze button
+    st.markdown('<style>div.stButton > button {width: 100%; height: 3em;}</style>', unsafe_allow_html=True)
+    run_button = st.button("🚀 SOLVE MAZE", type="primary")
 
-# Run button
-if st.button("🚀 Solve Maze", type="primary"):
+# Create a container for the visualization and results
+viz_container = st.container()
+
+with viz_container:
+    # Two columns layout for results and visualization
+    viz_col, results_col = st.columns([3, 2])
+    
+    with viz_col:
+        # Initial visualization placeholder
+        initial_viz = st.empty()
+        # Show initial maze
+        fig = visualize_maze(maze_graph, node_positions)
+        initial_viz.pyplot(fig)
+        plt.close(fig)
+    
+    with results_col:
+        # Initialize empty placeholders for results
+        stats_container = st.container()
+        with stats_container:
+            st.markdown("### Select an algorithm and press 'SOLVE MAZE'")
+            
+            # Pre-create metrics with empty values
+            metrics_cols = st.columns(3)
+            with metrics_cols[0]:
+                nodes_metric = st.empty()
+            with metrics_cols[1]:
+                path_metric = st.empty()
+            with metrics_cols[2]:
+                efficiency_metric = st.empty()
+            
+            # Placeholder for solution path
+            solution_path_container = st.empty()
+            
+            # Placeholder for status
+            status_text = st.empty()
+
+# Run algorithm if button is clicked
+if run_button:
     # Get selected algorithm and run it
     start, goal = 'A', 'B'
     
@@ -297,55 +315,33 @@ if st.button("🚀 Solve Maze", type="primary"):
         solution_path, explored_nodes = a_star(maze_graph, start, goal, heuristic)
         algorithm_name = "A*"
     
-    # Show algorithm information
-    st.markdown(f"## {algorithm} Results")
-    
-    # Results in two columns
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown(f"### Explored Path ({len(explored_nodes)} nodes)")
-        explored_path_str = " → ".join(explored_nodes)
-        st.code(explored_path_str)
-    
-    with col2:
-        st.markdown(f"### Solution Path ({len(solution_path)} nodes)")
-        solution_path_str = " → ".join(solution_path)
-        st.code(solution_path_str)
-    
-    # Show statistics
-    st.markdown("### Statistics")
-    stats_col1, stats_col2, stats_col3 = st.columns(3)
-    
-    with stats_col1:
-        st.metric("Total Nodes Visited", len(explored_nodes))
-    
-    with stats_col2:
-        st.metric("Solution Length", len(solution_path))
-    
-    with stats_col3:
+    # Update results in the results column
+    with results_col:
+        # Update status
+        status_text.text(f"Running {algorithm_name}...")
+        
+        # Update metrics
+        metrics_cols[0].metric("Nodes Visited", len(explored_nodes))
+        metrics_cols[1].metric("Path Length", len(solution_path))
+        
         efficiency = round((len(solution_path) / len(explored_nodes)) * 100, 2) if explored_nodes else 0
-        st.metric("Efficiency", f"{efficiency}%", 
+        metrics_cols[2].metric("Efficiency", f"{efficiency}%", 
                   delta=f"{round(efficiency - 50, 2)}%" if efficiency > 50 else f"{round(efficiency - 50, 2)}%",
                   delta_color="normal")
+        
+        # Update solution path
+        solution_path_container.markdown("### Solution")
+        solution_path_container.code(" → ".join(solution_path))
     
-    # Create placeholder for the visualization
-    st.markdown("### Visualization")
-    vis_placeholder = st.empty()
-    
-    # Animation is always on
-    # First animate the exploration, then the solution path
-    animation_speed = 1.0  # Fixed animation speed
-    
-    # Phase 1: Explore the maze
+    # Create progress bar
     progress_bar = st.progress(0)
-    status_text = st.empty()
     
+    # Animation Phase 1: Explore the maze
     for step in range(len(explored_nodes)):
         progress = step / (len(explored_nodes) + len(solution_path))
         progress_bar.progress(progress)
         
-        status_text.text(f"Exploring node: {explored_nodes[step]}")
+        status_text.text(f"Exploring: {explored_nodes[step]}")
         
         fig = visualize_maze(
             maze_graph, 
@@ -355,36 +351,36 @@ if st.button("🚀 Solve Maze", type="primary"):
             solution_path=None,
             solution_step=None
         )
-        vis_placeholder.pyplot(fig)
+        initial_viz.pyplot(fig)
         plt.close(fig)
         
-        time.sleep(0.5)  # Fixed speed
+        time.sleep(0.2)  # Faster animation
 
-    # Phase 2: Show the solution path
+    # Animation Phase 2: Show the solution path
     for step in range(len(solution_path)):
         progress = (len(explored_nodes) + step) / (len(explored_nodes) + len(solution_path))
         progress_bar.progress(progress)
         
-        status_text.text(f"Solution path: Reached {solution_path[step]}")
+        status_text.text(f"Solution: {solution_path[step]}")
         
         fig = visualize_maze(
             maze_graph, 
             node_positions,
             explored_nodes=explored_nodes,
-            explored_step=len(explored_nodes)-1,  # Show all explored nodes
+            explored_step=len(explored_nodes)-1,
             solution_path=solution_path,
             solution_step=step
         )
-        vis_placeholder.pyplot(fig)
+        initial_viz.pyplot(fig)
         plt.close(fig)
         
-        time.sleep(0.5)  # Fixed speed
+        time.sleep(0.2)  # Faster animation
     
-    # Final visualization
+    # Final state
     progress_bar.progress(1.0)
     status_text.text("Solution complete!")
     
-    # Show final result with all nodes
+    # Final visualization
     fig = visualize_maze(
         maze_graph, 
         node_positions,
@@ -393,18 +389,9 @@ if st.button("🚀 Solve Maze", type="primary"):
         solution_path=solution_path,
         solution_step=len(solution_path)-1
     )
-    vis_placeholder.pyplot(fig)
+    initial_viz.pyplot(fig)
     plt.close(fig)
-
-# Initial visualization of the maze without any solution
-if 'vis_placeholder' not in locals():
-    st.markdown("## Initial Maze")
-    fig = visualize_maze(maze_graph, node_positions)
-    st.pyplot(fig)
-    plt.close(fig)
-
-
 
 # Footer
 st.markdown("---")
-st.markdown("🤖 by anis belaiouar ")
+st.markdown("🤖 by anis belaiouar")
